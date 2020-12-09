@@ -1,0 +1,1348 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Cart {
+  cartID        Int        @id @default(autoincrement())
+  startPeriodID Int
+  endPeriodID   Int
+  personID      Int?       @map("idOsoby")
+  name          String
+  email         String
+  adsMotive     String
+  goal          String?
+  info          String?
+  PeriodEnd     Period     @relation("Cart_endPeriodIDToPeriod", fields: [endPeriodID], references: [periodID])
+  assignedTo    Person?    @relation(fields: [personID], references: [personID])
+  PeriodStart   Period     @relation("Cart_startPeriodIDToPeriod", fields: [startPeriodID], references: [periodID])
+  CartItem      CartItem[]
+
+  @@index([personID], name: "cartAssignement_idx")
+  @@index([endPeriodID], name: "cartPeriodEnd_idx")
+  @@index([startPeriodID], name: "cartPeriodStart_idx")
+}
+
+model CartItem {
+  cartID    Int
+  carrierID Int     @map("NCis")
+  nosice    Carrier @relation(fields: [carrierID], references: [carrierID])
+  Cart      Cart    @relation(fields: [cartID], references: [cartID])
+
+  @@id([cartID, carrierID])
+  @@index([carrierID], name: "cartCarrier_idx")
+}
+
+model adresy {
+  idAdr                           Int         @id @default(autoincrement())
+  idFirmy                         Int
+  aOdd                            String?
+  aUlice                          String?
+  aMesto                          String?
+  aPSC                            String?
+  aStat                           String?
+  aPozn                           String?
+  firmy_adresy_idFirmyTofirmy     firmy       @relation("adresy_idFirmyTofirmy", fields: [idFirmy], references: [idFirmy])
+  dokumenty                       dokumenty[]
+  firmy_adresyTofirmy_idFirAdr    firmy[]     @relation("adresyTofirmy_idFirAdr")
+  firmy_adresyTofirmy_idKorespAdr firmy[]     @relation("adresyTofirmy_idKorespAdr")
+  firmy_adresyTofirmy_idLepicAdr  firmy[]     @relation("adresyTofirmy_idLepicAdr")
+
+  @@index([idFirmy], name: "key_idx")
+}
+
+model alarm {
+  idAlarm  Int       @id @default(autoincrement())
+  dAlarm   DateTime?
+  dUdalost DateTime?
+  Udalost  String?
+  ks       Int?
+  idZak    Int?
+  idOsoby  Int?
+  MyFirma  Int?
+  aTyp     Int?
+  aStav    Int?
+  osoby    Person?   @relation(fields: [idOsoby], references: [personID])
+  zakazky  Offer?    @relation("alarmTozakazky", fields: [idZak], references: [offerID])
+
+  @@index([idOsoby], name: "alarm_osoba_idx")
+  @@index([dAlarm], name: "dAlarm")
+  @@index([idZak], name: "zakazka_idx")
+}
+
+model audit {
+  ncis     Int
+  idObdobi Int
+  aDatum   DateTime
+  aOsoba   Int
+  audit    String
+  osoby    Person   @relation(fields: [aOsoba], references: [personID])
+  obdobi   Period   @relation(fields: [idObdobi], references: [periodID])
+  nosice   Carrier  @relation("auditTonosice", fields: [ncis], references: [carrierID])
+
+  @@id([ncis, idObdobi])
+  @@index([idObdobi], name: "obdobi")
+  @@index([aOsoba], name: "osoba_idx")
+}
+
+model auditnos {
+  idAudit   Int            @id @default(autoincrement())
+  ncis      Int
+  idKlient  Int
+  aDatum    DateTime
+  aStav     auditnos_aStav
+  Audit     String
+  firmy     firmy          @relation(fields: [idKlient], references: [idFirmy])
+  nosice    Carrier        @relation("auditnosTonosice", fields: [ncis], references: [carrierID])
+  fotoaudit fotoaudit[]
+
+  @@index([aDatum], name: "aDatum")
+  @@index([ncis, aDatum, idKlient], name: "auditnos")
+  @@index([idKlient], name: "auditnos_klient_idx")
+  @@index([ncis], name: "ncis")
+}
+
+model auditprod {
+  idProd   Int
+  idObdobi Int
+  aDatum   DateTime?
+  Audit    String?
+
+  @@id([idProd, idObdobi])
+}
+
+model Folder {
+  idDir     Int         @id @default(autoincrement())
+  path      String      @map("dir")
+  dirPrim   Int?
+  dirPopis  String?
+  dokumenty dokumenty[] @relation("dirTodokumenty")
+  firmy     firmy[]     @relation("dirTofirmy")
+  zakazky   Offer[]     @relation("dirTozakazky")
+
+  @@index([path], name: "dir")
+  @@map("dir")
+}
+
+model dokumenty {
+  idDok                           Int                    @id @default(autoincrement())
+  dokTyp                          Int?
+  dokDruh                         String?
+  dokFirma                        Int                    @default(1)
+  dokFakt                         String?
+  dokCislo                        String?
+  dokKCislo                       String?
+  dokNazev                        String?
+  idDir                           Int                    @default(2)
+  idFirmy                         Int
+  idKlient                        Int?
+  idZak                           Int?
+  idOsoby                         Int?
+  idAdrKP                         Int?
+  dokOd                           DateTime?
+  dokDo                           DateTime?
+  dokDPodpis                      DateTime?
+  dokNeurcita                     dokumenty_dokNeurcita?
+  dokVypMes                       Int?
+  dokSeznam                       Int?
+  idDokNad                        Int?
+  dokPDF                          Int                    @default(0)
+  dokPrac                         Int?
+  dokExt                          String?
+  dokCCena                        Float?
+  dokMena                         dokumenty_dokMena      @default(kc)
+  firmy_dokumenty_dokFirmaTofirmy firmy                  @relation("dokumenty_dokFirmaTofirmy", fields: [dokFirma], references: [idFirmy])
+  adresy                          adresy?                @relation(fields: [idAdrKP], references: [idAdr])
+  dir                             Folder                 @relation("dirTodokumenty", fields: [idDir], references: [idDir])
+  firmy_dokumenty_idFirmyTofirmy  firmy                  @relation("dokumenty_idFirmyTofirmy", fields: [idFirmy], references: [idFirmy])
+  firmy_dokumenty_idKlientTofirmy firmy?                 @relation("dokumenty_idKlientTofirmy", fields: [idKlient], references: [idFirmy])
+  osoby                           Person?                @relation("dokumentyToosoby", fields: [idOsoby], references: [personID])
+  zakazky                         Offer?                 @relation("dokumentyTozakazky", fields: [idZak], references: [offerID])
+  nosdok                          nosdok[]
+  vfaktury                        vfaktury[]
+  zakdok                          zakdok[]
+
+  @@index([idAdrKP], name: "doc_adr_idx")
+  @@index([idDir], name: "doc_dir_idx")
+  @@index([idFirmy], name: "doc_firma_idx")
+  @@index([idKlient], name: "doc_klient_idx")
+  @@index([idOsoby], name: "doc_osoba_idx")
+  @@index([dokFirma], name: "doc_zadavatel_idx")
+  @@index([idZak], name: "doc_zak_idx")
+}
+
+model firmy {
+  idFirmy                             Int              @id
+  FFirma                              String
+  FNazev                              String?
+  ICO                                 String?
+  DIC                                 String?
+  Splatnost                           Int?             @default(14)
+  /// This field's default value can currently not be parsed: `-1`.
+  Frekvence                           Int?             @default(dbgenerated())
+  fTel                                String?
+  fFax                                String?
+  fPozn                               String?
+  fSoud                               String?
+  idPrimKontakt                       Int?
+  idZastoupena                        Int?
+  idLepic                             Int?
+  idFirAdr                            Int?
+  idKorespAdr                         Int?
+  idLepicAdr                          Int?
+  idkDir                              Int?
+  fKlient                             Int              @default(0)
+  fDodav                              Int              @default(0)
+  fRSdod                              Int              @default(0)
+  fAktivni                            Int              @default(1)
+  Cinnost                             String?
+  Region                              String?
+  fKat                                firmy_fKat?
+  adresy_adresyTofirmy_idFirAdr       adresy?          @relation("adresyTofirmy_idFirAdr", fields: [idFirAdr], references: [idAdr])
+  adresy_adresyTofirmy_idKorespAdr    adresy?          @relation("adresyTofirmy_idKorespAdr", fields: [idKorespAdr], references: [idAdr])
+  adresy_adresyTofirmy_idLepicAdr     adresy?          @relation("adresyTofirmy_idLepicAdr", fields: [idLepicAdr], references: [idAdr])
+  dir                                 Folder?          @relation("dirTofirmy", fields: [idkDir], references: [idDir])
+  adresy_adresy_idFirmyTofirmy        adresy[]         @relation("adresy_idFirmyTofirmy")
+  auditnos                            auditnos[]
+  dokumenty_dokumenty_dokFirmaTofirmy dokumenty[]      @relation("dokumenty_dokFirmaTofirmy")
+  dokumenty_dokumenty_idFirmyTofirmy  dokumenty[]      @relation("dokumenty_idFirmyTofirmy")
+  dokumenty_dokumenty_idKlientTofirmy dokumenty[]      @relation("dokumenty_idKlientTofirmy")
+  jmena                               jmena[]
+  korporace                           korporace[]
+  korposoby                           korposoby[]
+  loga                                loga[]
+  nadobdobi                           nadobdobi[]
+  carrier                             Carrier[]
+  prodejny                            prodejny[]
+  rsnosice                            rsnosice[]
+  svoobdobi_firmyTosvoobdobi_idAgent  svoobdobi[]      @relation("firmyTosvoobdobi_idAgent")
+  svoobdobi_firmyTosvoobdobi_idKlient svoobdobi[]      @relation("firmyTosvoobdobi_idKlient")
+  undozakp                            undozakp[]
+  offers                              Offer[]
+  zakazkyp                            CarrierOfOffer[] @relation("firmyTozakazkyp")
+  zakpkorp                            zakpkorp[]
+
+  @@index([idKorespAdr], name: "firma_adr_idx")
+  @@index([idFirAdr], name: "firma_adr_idx1")
+  @@index([idkDir], name: "firma_dir_idx")
+  @@index([idLepicAdr], name: "firma_lepard_idx")
+}
+
+model fotoaudit {
+  idAudit  Int
+  Verze    Int
+  fName    String
+  auditnos auditnos @relation(fields: [idAudit], references: [idAudit])
+
+  @@id([idAudit, Verze])
+}
+
+model fotodoc {
+  idZak        Int
+  idObdobi     Int
+  nCis         Int
+  idSkup       Int?
+  idSkupFilled Int
+  verze        Int
+  fName        String
+  skupiny      Group?           @relation(fields: [idSkup], references: [groupID])
+  zaknos       CarriersInPeriod @relation("fotodocTozaknos", fields: [idZak, idObdobi, nCis], references: [offerID, periodID, carrierID])
+
+  @@id([idZak, idObdobi, nCis, idSkupFilled, verze])
+  @@index([idSkup], name: "fotodoc_skupina")
+  @@index([idZak, idObdobi, nCis], name: "ncis & obdobi & idZak")
+}
+
+model fotogr {
+  ncis     Int
+  idZak    Int
+  fname    String?
+  zakazkyp CarrierOfOffer @relation(fields: [ncis, idZak], references: [carrierID, offerID])
+
+  @@id([ncis, idZak])
+}
+
+model fotomapy {
+  nCis   Int
+  verze  Int     @default(autoincrement())
+  fName  String
+  nosice Carrier @relation(fields: [nCis], references: [carrierID])
+
+  @@id([verze, nCis])
+  @@index([nCis], name: "fotomapy_nosic_idx")
+}
+
+model fotoprod {
+  idProd   Int
+  idObdobi Int
+  fName    String
+  obdobi   Period   @relation(fields: [idObdobi], references: [periodID])
+  prodejny prodejny @relation(fields: [idProd], references: [idProd])
+
+  @@id([idProd, idObdobi])
+  @@index([idObdobi], name: "fotoprod_obdobi")
+}
+
+model CarrierPhoto {
+  carrierID Int     @map("nCis")
+  order     Int     @default(autoincrement()) @map("verze")
+  src       String  @map("fName")
+  nosice    Carrier @relation(fields: [carrierID], references: [carrierID])
+
+  @@id([order, carrierID])
+  @@index([carrierID], name: "nCis")
+  @@map("fotorl")
+}
+
+model jmena {
+  idJmena  Int     @id @default(autoincrement())
+  idFirmy  Int
+  Titul    String? @default("")
+  Jmeno    String? @default("")
+  Prijmeni String
+  email    String?
+  tel      String?
+  jPozn    String?
+  jednatel Int?
+  kontakt  Int?
+  firmy    firmy   @relation(fields: [idFirmy], references: [idFirmy])
+
+  @@index([idFirmy], name: "jmeno_firma_idx")
+}
+
+model kategorie {
+  idKat     Int    @id
+  Kategorie String @unique
+  kZakl     Int?
+  kBarva    Int?
+  hex       String
+}
+
+model korporace {
+  idKlient         Int     @id
+  KorpNazev        String?
+  korpFirma        Int?
+  delkaObdobi      Int?
+  delkaObdobiAudit Int?
+  idObdobi1        Int?
+  idObdobiAudit1   Int?
+  otyp             String?
+  otypaudit        String?
+  idLogo           Int?
+  loga             loga?   @relation(fields: [idLogo], references: [idLogo])
+  startPeriod      Period? @relation("PeriodTokorporace_idObdobi1", fields: [idObdobi1], references: [periodID])
+  auditPeriod      Period? @relation("PeriodTokorporace_idObdobiAudit1", fields: [idObdobiAudit1], references: [periodID])
+  firmy            firmy?  @relation(fields: [korpFirma], references: [idFirmy])
+
+  @@index([idObdobiAudit1], name: "auditkorp_obdobi_idx")
+  @@index([korpFirma], name: "korp_firma_idx")
+  @@index([idLogo], name: "korp_logo_idx")
+  @@index([idObdobi1], name: "korp_obdobi")
+}
+
+model korposoby {
+  idKorpOsoby     Int               @id @default(autoincrement())
+  Funkce          korposoby_Funkce?
+  level           Int
+  Jmeno           String?
+  Prijmeni        String            @unique
+  Heslo           String?
+  idNad           Int?
+  idProd          Int?
+  hashInc         Int               @default(0)
+  idKlient        Int?
+  firmy           firmy?            @relation(fields: [idKlient], references: [idFirmy])
+  korposoby       korposoby?        @relation("korposobyTokorposoby_idNad", fields: [idNad], references: [idKorpOsoby])
+  prodejny        prodejny?         @relation(fields: [idProd], references: [idProd])
+  other_korposoby korposoby[]       @relation("korposobyTokorposoby_idNad")
+
+  @@index([idNad], name: "idNad")
+  @@index([idProd], name: "idProd")
+  @@index([idKlient], name: "korpOsoby_klient_idx")
+}
+
+model kraj {
+  idKraj   Int        @id
+  Kraj     String
+  // kraje kraje[]
+  nosice   Carrier[]
+  prodejny prodejny[]
+  rsnosice rsnosice[]
+}
+
+model loga {
+  idLogo    Int           @id @default(autoincrement())
+  idKlient  Int?
+  Logo      String?
+  Soubor    String?
+  skupina   loga_skupina?
+  firmy     firmy?        @relation(fields: [idKlient], references: [idFirmy])
+  korporace korporace[]
+  miniprod  miniprod[]
+  zakloga   zakloga[]
+
+  @@index([Logo], name: "Logo")
+  @@index([idKlient], name: "logo_klient_idx")
+}
+
+model mapperitem {
+  idMapper   Int
+  idZak      Int
+  idObdobi   Int
+  color      Int
+  hex        String
+  mappername mappername     @relation(fields: [idMapper], references: [idMapper])
+  zakobdobi  PeriodsOfOffer @relation("mapperitemTozakobdobi", fields: [idZak, idObdobi], references: [offerID, periodID])
+
+  @@id([idMapper, idZak])
+  @@index([idZak, idObdobi], name: "mapper_zakobdobi_idx")
+}
+
+model mappername {
+  idMapper   Int          @id @default(autoincrement())
+  Name       String
+  idOsoby    Int?
+  osoby      Person?      @relation(fields: [idOsoby], references: [personID])
+  mapperitem mapperitem[]
+
+  @@index([idOsoby], name: "mapper_osoba_idx")
+}
+
+model miniprod {
+  idMiniprod Int      @id @default(autoincrement())
+  idLogo     Int
+  lat        Float    @default(0)
+  lng        Float    @default(0)
+  loga       loga     @relation(fields: [idLogo], references: [idLogo])
+  prodejny   prodejny @relation(fields: [idMiniprod], references: [idMiniprod])
+
+  @@index([idLogo], name: "Logo_idx")
+}
+
+model Motive {
+  motiveID         Int                @id @default(autoincrement()) @map("Motiv")
+  description      String             @map("mText")
+  color            Int                @map("mBarva")
+  type             String?            @map("mTyp")
+  offerID          Int?               @default(0) @map("midZak")
+  mSkup            motiveType?
+  shortTitle       String?            @map("mZkratka")
+  basic            Int?               @map("mZakl")
+  categoryID       Int                @default(1) @map("idKat")
+  hex              String
+  zakazky          Offer?             @relation(fields: [offerID], references: [offerID])
+  groups           CarrierGroup[]
+  carriersInPeriod CarriersInPeriod[]
+
+  @@index([offerID], name: "motiv_idZak_idx")
+  @@map("motivy")
+}
+
+model myfirmy {
+  idMyFirmy    Int     @id
+  mfNazev      String?
+  mfICO        String?
+  mfUlice      String?
+  mfMesto      String?
+  mfPsc        String?
+  mfJednatel   Int?
+  mfPohRada    String?
+  mfPohmServer String?
+  mfKursEur    Float?
+  idDod        Int?
+}
+
+model nabidka {
+  Cis     Int
+  idOsoby Int
+  X       Int?
+
+  @@id([Cis, idOsoby])
+}
+
+model nabzak {
+  idZak    Int
+  idObdobi Int
+  ncis     Int
+  obsaz    String?
+  X        Int?
+  zaknos   CarriersInPeriod @relation(fields: [idZak, idObdobi, ncis], references: [offerID, periodID, carrierID])
+
+  @@id([idZak, ncis, idObdobi])
+  @@index([idZak, idObdobi, ncis], name: "nabzak_zaknos")
+}
+
+model nadobdobi {
+  idKlient Int
+  idObdobi Int
+  noTyp    masterPeriodType @default(month)
+  firmy    firmy            @relation(fields: [idKlient], references: [idFirmy])
+  obdobi   Period           @relation("nadobdobiToobdobi", fields: [idObdobi], references: [periodID])
+  zakazky  Offer[]          @relation("nadobdobiTozakazky")
+
+  @@id([idKlient, idObdobi])
+  @@index([idObdobi], name: "nadbodobi_obdobi")
+}
+
+model nosdok {
+  idDok     Int
+  ncis      Int
+  dokumenty dokumenty @relation(fields: [idDok], references: [idDok])
+  nosice    Carrier   @relation("nosdokTonosice", fields: [ncis], references: [carrierID])
+
+  @@id([idDok, ncis])
+  @@index([ncis], name: "nosdok_nos_idx")
+}
+
+model Carrier {
+  carrierID       Int              @id @map("NCis")
+  origin          String?          @map("Zdroj")
+  idDod           Int?
+  type            String           @map("Typ")
+  city            String?          @map("Mesto")
+  street          String?          @map("Ulice")
+  description     String?          @map("Popis")
+  dimensions      String?          @map("Velikost")
+  idKraj          Int              @default(0)
+  ownerID         String?          @map("VCis")
+  anguleToRoad    Int?             @map("Poloha")
+  Osvetleni       Int?
+  Videt           Int?
+  NPozn           String?
+  lng             Float?
+  lat             Float?
+  /// This field's default value can currently not be parsed: `-1`.
+  orientation     Int?             @default(dbgenerated()) @map("Azimut")
+  GPSOverriten    Int?             @default(0) @map("GpsNase")
+  textOverriten   Int?             @default(0) @map("TextNase")
+  traffic         Int?             @map("Prujezd")
+  size            Float?           @map("Plocha")
+  sizeCoef        Int?             @map("kVel")
+  placeCoef       Int?             @map("kPol")
+  lightCoef       Int?             @map("kOsv")
+  visibilityCoef  Int?             @map("kVid")
+  exclusivityCoef Int?             @map("kExkl")
+  surroundingCoef Int?             @map("kOkolo")
+  regionID        Int?
+  districtID      Int?
+  District        District?        @relation("DistrictTonosice", fields: [districtID], references: [districtID])
+  firmy           firmy?           @relation(fields: [idDod], references: [idFirmy])
+  kraj            kraj             @relation(fields: [idKraj], references: [idKraj])
+  Region          Region?          @relation("RegionTonosice", fields: [regionID], references: [regionID])
+  CartItem        CartItem[]
+  audit           audit[]          @relation("auditTonosice")
+  auditnos        auditnos[]       @relation("auditnosTonosice")
+  fotomapy        fotomapy[]
+  photos          CarrierPhoto[]
+  nosdok          nosdok[]         @relation("nosdokTonosice")
+  nosiceex        nosiceex?
+  nosprod         nosprod[]        @relation("nosiceTonosprod")
+  nosvyb          nosvyb[]
+  rezervacepold   rezervacepold[]
+  rsnosice        rsnosice?        @relation("nosiceTorsnosice")
+  svo             svo?
+  svoobdobi       svoobdobi[]      @relation("nosiceTosvoobdobi")
+  undozaknos      undozaknos[]     @relation("nosiceToundozaknos")
+  undozakp        undozakp[]       @relation("nosiceToundozakp")
+  zakazkyp        CarrierOfOffer[]
+
+  @@index([districtID], name: "district")
+  @@index([idDod], name: "nosic_dodavatel_idx")
+  @@index([idKraj], name: "nosic_kraj_idx")
+  @@index([regionID], name: "region")
+  @@map("nosice")
+}
+
+model nosiceex {
+  ncis        Int     @id
+  exRezervace Int?    @default(0)
+  exNCena     Int?
+  exPolitika  Int?
+  exPotraviny Int?
+  exNabytek   Int?
+  exSex       Int?
+  exAlkohol   Int?
+  exKasino    Int?
+  nosice      Carrier @relation(fields: [ncis], references: [carrierID])
+}
+
+model nosprod {
+  ncis     Int
+  idProd   Int
+  idObdobi Int
+  podil    Int?     @default(1)
+  obdobi   Period   @relation(fields: [idObdobi], references: [periodID])
+  prodejny prodejny @relation(fields: [idProd], references: [idProd])
+  nosice   Carrier  @relation("nosiceTonosprod", fields: [ncis], references: [carrierID])
+
+  @@id([ncis, idProd, idObdobi])
+  @@index([ncis, idObdobi], name: "nosobd")
+  @@index([idObdobi], name: "nosprod_obdobi")
+  @@index([idProd], name: "nosprod_prod_idx")
+}
+
+model CarrierGroup {
+  offerID          Int              @map("idZak")
+  periodID         Int              @map("idObdobi")
+  carrierID        Int              @map("ncis")
+  groupID          Int              @map("idSkup")
+  motiveID         Int              @map("idMotiv")
+  productionCost   Int?             @map("produkce")
+  comment          String?          @map("nsPozn")
+  motivy           Motive           @relation(fields: [motiveID], references: [motiveID])
+  skupiny          Group            @relation("nosskupToskupiny", fields: [groupID], references: [groupID])
+  CarriersInPeriod CarriersInPeriod @relation("nosskupTozaknos", fields: [offerID, periodID, carrierID], references: [offerID, periodID, carrierID])
+
+  @@id([periodID, carrierID, groupID, offerID])
+  @@index([groupID], name: "idSkup")
+  @@index([motiveID], name: "nosskup_motiv")
+  @@index([offerID, periodID, carrierID], name: "nosskup_zaknos")
+  @@index([offerID, periodID, groupID], name: "zaknos")
+  @@map("nosskup")
+}
+
+model nosvyb {
+  NCis      Int
+  typKamp   String
+  vybrano   Int     @default(0)
+  nevybrano Int?
+  celkem    Int     @default(0)
+  cetnost   Float?
+  nosice    Carrier @relation(fields: [NCis], references: [carrierID])
+
+  @@id([NCis, typKamp])
+}
+
+model Period {
+  periodID        Int              @id @default(autoincrement()) @map("idObdobi")
+  from            DateTime         @map("od")
+  till            DateTime         @map("do")
+  type            String           @default("o") @map("otyp")
+  text            String           @map("Obdobi")
+  monthsNo        Int              @map("delka")
+  RM              Int?
+  CartEndPeriod   Cart[]           @relation("Cart_endPeriodIDToPeriod")
+  CartStartPeriod Cart[]           @relation("Cart_startPeriodIDToPeriod")
+  audit           audit[]
+  fotoprod        fotoprod[]
+  startPeriod     korporace[]      @relation("PeriodTokorporace_idObdobi1")
+  auditPeriod     korporace[]      @relation("PeriodTokorporace_idObdobiAudit1")
+  nadobdobi       nadobdobi[]      @relation("nadobdobiToobdobi")
+  nosprod         nosprod[]
+  svoobdobi       svoobdobi[]
+  undozaknos      undozaknos[]
+  zakobdobi       PeriodsOfOffer[]
+
+  @@unique([from, till, type], name: "Datumy")
+  @@unique([type, text], name: "typ_obdobi")
+  @@map("obdobi")
+}
+
+model Person {
+  personID   Int          @id @default(autoincrement()) @map("idOsoby")
+  alias      String       @unique @map("Alias")
+  name       String?      @map("Jmeno")
+  rights     Int?         @default(3) @map("Prava")
+  email      String?      @map("Email")
+  phoneNo    String?      @map("Tel")
+  pass       String?      @map("Heslo")
+  canSign    Int?         @map("Jednatel")
+  // This type is currently not supported.
+  // Podpis  mediumblob?
+  Cart       Cart[]
+  alarm      alarm[]
+  audit      audit[]
+  dokumenty  dokumenty[]  @relation("dokumentyToosoby")
+  mappername mappername[]
+  undozak    undozak[]
+  zakazky    Offer[]      @relation("osobyTozakazky")
+  zaksoubory zaksoubory[]
+
+  @@map("osoby")
+}
+
+model print {
+  idPrint Int  @id @default(autoincrement())
+  idOsoby Int?
+  ncis    Int?
+}
+
+model prodejny {
+  idProd     Int         @id
+  Prodejna   String
+  idMiniprod Int?
+  PKod       Int
+  PTyp       String?
+  Mesto      String?
+  Ulice      String?
+  PSC        String?
+  idKraj     Int?
+  idKlient   Int
+  PPozn      String?
+  firmy      firmy       @relation(fields: [idKlient], references: [idFirmy])
+  kraj       kraj?       @relation(fields: [idKraj], references: [idKraj])
+  fotoprod   fotoprod[]
+  korposoby  korposoby[]
+  miniprod   miniprod?
+  nosprod    nosprod[]
+  zakprod    zakprod[]
+
+  @@index([idMiniprod], name: "prod_idMiniprod_idx")
+  @@index([idKlient], name: "prod_klient_idx")
+  @@index([idKraj], name: "prod_kraj_idx")
+}
+
+model produkce {
+  idProdukce Int          @id
+  prZkratka  String?
+  prNazev    String?
+  zaknosprod zaknosprod[]
+}
+
+model prujezd {
+  idprujezd Int   @id @default(autoincrement())
+  prujezd   Int
+  lat       Float
+  lng       Float
+}
+
+model rsnosice {
+  ncis      Int     @id
+  idDod     Int
+  Mesto     String?
+  Ctvrt     String?
+  Ulice     String?
+  Popis     String?
+  Kraj      String?
+  Velikost  String?
+  Poloha    Int?
+  Osvetleni Int?
+  Videt     Int?
+  lng       Float?
+  lat       Float?
+  stav      Int
+  typ       String?
+  tvelikost String?
+  idKraj    Int?
+  firmy     firmy   @relation(fields: [idDod], references: [idFirmy])
+  kraj      kraj?   @relation(fields: [idKraj], references: [idKraj])
+  nosice    Carrier @relation("nosiceTorsnosice", fields: [ncis], references: [carrierID])
+
+  @@index([idDod], name: "rsnos_dod_idx")
+  @@index([idKraj], name: "rsnos_kraj_idx")
+}
+
+model Group {
+  offerID    Int            @map("idZak")
+  groupID    Int            @default(autoincrement()) @map("idSkup")
+  categoryID Int            @map("idKat")
+  title      String         @map("Skupina")
+  color      Int            @map("sBarva")
+  hex        String
+  fotodoc    fotodoc[]
+  nosskup    CarrierGroup[] @relation("nosskupToskupiny")
+  vylepy     vylepy[]
+
+  @@id([groupID, offerID])
+  @@map("skupiny")
+}
+
+model svo {
+  ncis      Int            @id
+  svoPozice svo_svoPozice?
+  svoPoloha svo_svoPoloha?
+  svoCis    String?
+  svoSmer   String?
+  svoPozn   String?
+  nosice    Carrier        @relation(fields: [ncis], references: [carrierID])
+}
+
+model svoobdobi {
+  ncis                            Int
+  idObdobi                        Int
+  svoStav                         svoobdobi_svoStav?
+  svoTyp                          svoobdobi_svoTyp?
+  balicek                         Int?
+  ncena                           Int?
+  zsleva                          Int?
+  idKlient                        Int?
+  idAgent                         Int?
+  idZak                           Int?
+  firmy_firmyTosvoobdobi_idAgent  firmy?             @relation("firmyTosvoobdobi_idAgent", fields: [idAgent], references: [idFirmy])
+  firmy_firmyTosvoobdobi_idKlient firmy?             @relation("firmyTosvoobdobi_idKlient", fields: [idKlient], references: [idFirmy])
+  obdobi                          Period             @relation(fields: [idObdobi], references: [periodID])
+  zakazky                         Offer?             @relation("svoobdobiTozakazky", fields: [idZak], references: [offerID])
+  nosice                          Carrier            @relation("nosiceTosvoobdobi", fields: [ncis], references: [carrierID])
+
+  @@id([ncis, idObdobi])
+  @@index([idAgent], name: "svoo?agent_idx")
+  @@index([idKlient], name: "svoo_klient_idx")
+  @@index([idObdobi], name: "svoo_obdobi")
+  @@index([idZak], name: "svoo_zak_idx")
+}
+
+model tiskarny {
+  idTiskarny Int      @id @default(autoincrement())
+  Tiskarna   String?
+  tEmail     String?  @unique
+  vylepy     vylepy[]
+}
+
+model undozak {
+  idUndo     Int          @id @default(autoincrement())
+  idZak      Int
+  uTime      DateTime     @default(now())
+  uPopis     String?
+  idOsoby    Int?
+  aktivni    Int?         @default(0)
+  osoby      Person?      @relation(fields: [idOsoby], references: [personID])
+  zakazky    Offer        @relation("undozakTozakazky", fields: [idZak], references: [offerID])
+  undozaknos undozaknos[]
+  undozakp   undozakp[]
+
+  @@index([idOsoby], name: "undo_osoba_idx")
+  @@index([idZak], name: "undo_zak_idx")
+}
+
+model undozaknos {
+  idUndo   Int
+  idObdobi Int
+  ncis     Int
+  X        Int?
+  XZ       Int?
+  Aud      Int?
+  Obsaz    String?
+  Motiv    Int?
+  PCena    Int?
+  TCena    Int?
+  Pocet    Int     @default(1)
+  obdobi   Period  @relation(fields: [idObdobi], references: [periodID])
+  undozak  undozak @relation(fields: [idUndo], references: [idUndo])
+  nosice   Carrier @relation("nosiceToundozaknos", fields: [ncis], references: [carrierID])
+
+  @@id([idUndo, ncis, idObdobi])
+  @@index([ncis], name: "undonos_ncis_idx")
+  @@index([idObdobi], name: "undonos_obdobi")
+}
+
+model undozakp {
+  idUndo     Int
+  ncis       Int
+  PTyp       String?
+  PCis       Int?
+  PMotiv     Int?
+  Info       String?
+  kVyznam    Int?
+  kStrid     Int?
+  mDesek     Int?
+  Vzdalenost String?
+  Sipka      String?
+  Strany     Int?
+  NCena      Int?
+  idAgent    Int?
+  firmy      firmy?  @relation(fields: [idAgent], references: [idFirmy])
+  undozak    undozak @relation(fields: [idUndo], references: [idUndo])
+  nosice     Carrier @relation("nosiceToundozakp", fields: [ncis], references: [carrierID])
+
+  @@id([idUndo, ncis])
+  @@index([idAgent], name: "undozak_agent_idx")
+  @@index([ncis], name: "undozak_nos_idx")
+}
+
+model velikosti {
+  Xvel     String  @id
+  Velikost String?
+  Typ      String?
+}
+
+model vfaktury {
+  idFakt      Int         @id @default(autoincrement())
+  vfStav      String?
+  idDok       Int
+  idZak       Int?
+  vfDFakt     DateTime?
+  vfDUZP      DateTime?
+  vfSplatnost Int?
+  vfCCelkem   Float?
+  vfDPH       Int?
+  vfCCelkemS  Float?
+  vfCisPoh    String?
+  vfText      String?
+  vfPozn      String?
+  dokumenty   dokumenty   @relation(fields: [idDok], references: [idDok])
+  zakazky     Offer?      @relation("vfakturyTozakazky", fields: [idZak], references: [offerID])
+  vfakturyp   vfakturyp[]
+
+  @@index([idDok], name: "faktura_doc_idx")
+  @@index([idZak], name: "faktura_zak_idx")
+}
+
+model vfakturyp {
+  idFakt   Int
+  idfPol   Int
+  vfpText  String?
+  vfpCena1 Float?
+  vfpPocet Int?
+  vfpJedn  String?
+  vfpCena  Float?
+  vfpFrekv Int?
+  vfaktury vfaktury @relation(fields: [idFakt], references: [idFakt])
+
+  @@id([idFakt, idfPol])
+}
+
+model vylepy {
+  idZak        Int
+  idObdobi     Int
+  idSkup       Int?
+  idSkupFilled Int
+  Reference    String?
+  Material     String?
+  dExpedice    DateTime?
+  dDodani      DateTime?
+  dVylep       DateTime?
+  idTiskarny   Int?
+  skupiny      Group?         @relation(fields: [idSkup], references: [groupID])
+  tiskarny     tiskarny?      @relation(fields: [idTiskarny], references: [idTiskarny])
+  zakobdobi    PeriodsOfOffer @relation("vylepyTozakobdobi", fields: [idZak, idObdobi], references: [offerID, periodID])
+
+  @@id([idZak, idObdobi, idSkupFilled])
+  @@index([idSkup], name: "vylep_skupina")
+  @@index([idTiskarny], name: "vylep_tiskarna_idx")
+}
+
+model Offer {
+  offerID          Int                @id @default(autoincrement()) @map("idZak")
+  type             String?            @map("ZTyp")
+  clinetID         Int                @map("idKlient")
+  title            String             @map("ZNazev")
+  idKraj           Int?
+  city             String?            @map("Mesto")
+  creatorID        Int                @map("idOsoby")
+  lastEdited       DateTime?          @map("DPrac")
+  state            String             @map("Stav")
+  editable         Int                @default(0) @map("zEdit")
+  idDokFakt        Int?
+  belongsToID      Int                @default(1) @map("Firma")
+  offerFolderID    Int?               @map("idzDir")
+  zMena            currency           @default(kc)
+  idNadObdobi      Int?
+  zKorp            corporationType    @default(normal)
+  parentOfferID    Int?               @map("idZakRodic")
+  zVazba           parentChildReason?
+  zOpce            Int?
+  firmy            firmy              @relation(fields: [clinetID], references: [idFirmy])
+  nadobdobi        nadobdobi?         @relation("nadobdobiTozakazky", fields: [idNadObdobi], references: [idObdobi])
+  osoby            Person             @relation("osobyTozakazky", fields: [creatorID], references: [personID])
+  parentOffer      Offer?             @relation("zakazkyTozakazky_idZakRodic", fields: [parentOfferID], references: [offerID])
+  dir              Folder?            @relation("dirTozakazky", fields: [offerFolderID], references: [idDir])
+  SelectionPolygon SelectionPolygon[] @relation("SelectionPolygonTozakazky")
+  alarm            alarm[]            @relation("alarmTozakazky")
+  dokumenty        dokumenty[]        @relation("dokumentyTozakazky")
+  motives          Motive[]
+  svoobdobi        svoobdobi[]        @relation("svoobdobiTozakazky")
+  undozak          undozak[]          @relation("undozakTozakazky")
+  vfaktury         vfaktury[]         @relation("vfakturyTozakazky")
+  other_zakazky    Offer[]            @relation("zakazkyTozakazky_idZakRodic")
+  carriersOfOffer  CarrierOfOffer[]   @relation("zakazkyTozakazkyp")
+  zakdok           zakdok[]           @relation("zakazkyTozakdok")
+  zakloga          zakloga[]          @relation("zakazkyTozakloga")
+  periodsOfOffer   PeriodsOfOffer[]   @relation("zakazkyTozakobdobi")
+  zakprefakt       zakprefakt?
+  zakprod          zakprod[]          @relation("zakazkyTozakprod")
+
+  @@index([belongsToID], name: "Firma")
+  @@index([type, clinetID], name: "Korporatni Navigace")
+  @@index([offerFolderID], name: "zakazka_dir_idx")
+  @@index([clinetID], name: "zakazka_klient_idx")
+  @@index([idNadObdobi], name: "zakazka_nadobdobi_idx")
+  @@index([creatorID], name: "zakazka_osoba_idx")
+  @@index([parentOfferID], name: "zakazka_rodic_idx")
+  @@map("zakazky")
+}
+
+model CarrierOfOffer {
+  offerID    Int                @map("idZak")
+  carrierID  Int                @map("NCis")
+  type       String             @map("PTyp")
+  shortID    Int                @map("PCis")
+  motive     Int?               @default(1) @map("PMotiv")
+  info       String?            @map("Info")
+  kVyznam    Int?
+  kStrid     Int?
+  mDesek     Int?
+  Vzdalenost String?
+  Sipka      String?
+  Strany     Int?               @default(1)
+  ourPrice   Int?               @map("NCena")
+  idAgent    Int?
+  nosice     Carrier            @relation(fields: [carrierID], references: [carrierID])
+  firmy      firmy?             @relation("firmyTozakazkyp", fields: [idAgent], references: [idFirmy])
+  offer      Offer              @relation("zakazkyTozakazkyp", fields: [offerID], references: [offerID])
+  fotogr     fotogr?
+  zaknos     CarriersInPeriod[] @relation("zakazkypTozaknos")
+  zakpkorp   zakpkorp?          @relation("zakazkypTozakpkorp")
+
+  @@id([offerID, carrierID])
+  @@unique([offerID, type, shortID], name: "pcis")
+  @@index([idAgent], name: "zakp_agent_idx")
+  @@index([carrierID], name: "zakp_ncis_idx")
+  @@map("zakazkyp")
+}
+
+model zakdok {
+  idDok     Int
+  idZak     Int
+  zdTyp     String?   @default("D")
+  zdCena    Float?
+  dokumenty dokumenty @relation(fields: [idDok], references: [idDok])
+  zakazky   Offer     @relation("zakazkyTozakdok", fields: [idZak], references: [offerID])
+
+  @@id([idDok, idZak])
+  @@index([idZak], name: "doc_zak_idx")
+}
+
+model zakloga {
+  idZak   Int
+  idLogo  Int
+  loga    loga  @relation(fields: [idLogo], references: [idLogo])
+  zakazky Offer @relation("zakazkyTozakloga", fields: [idZak], references: [offerID])
+
+  @@id([idZak, idLogo])
+  @@index([idLogo], name: "zak_logo_idx")
+}
+
+model CarriersInPeriod {
+  offerID         Int            @map("idZak")
+  periodID        Int            @map("idObdobi")
+  carrierID       Int            @map("ncis")
+  selected        Boolean        @default(false) @map("X")
+  wanted          Boolean        @default(false) @map("XZ")
+  audited         Boolean        @default(false) @map("Aud")
+  reservation     String         @default("") @map("Obsaz")
+  motiveID        Int?           @default(1) @map("Motiv")
+  sellingPrice    Int?           @map("PCena")
+  priceOfPrint    Int?           @map("TCena")
+  count           Int            @default(1) @map("Pocet")
+  motivy          Motive?        @relation(fields: [motiveID], references: [motiveID])
+  zakobdobi       PeriodsOfOffer @relation("zaknosTozakobdobi", fields: [offerID, periodID], references: [offerID, periodID])
+  carriersOfOffer CarrierOfOffer @relation("zakazkypTozaknos", fields: [offerID, carrierID], references: [offerID, carrierID])
+  fotodoc         fotodoc[]      @relation("fotodocTozaknos")
+  nabzak          nabzak?
+  groups          CarrierGroup[] @relation("nosskupTozaknos")
+  zaknosprod      zaknosprod[]   @relation("zaknosTozaknosprod")
+  zakrez          zakrez?
+
+  @@id([offerID, periodID, carrierID])
+  @@index([offerID, periodID], name: "IDZak & IDObdobi")
+  @@index([offerID, carrierID], name: "IDZak & ncis")
+  @@index([motiveID], name: "zaknos_motiv")
+  @@map("zaknos")
+}
+
+model zaknosprod {
+  idZak      Int
+  idObdobi   Int
+  ncis       Int
+  idProdukce Int
+  val        Int?
+  ks         Int              @default(1)
+  produkce   produkce         @relation(fields: [idProdukce], references: [idProdukce])
+  zaknos     CarriersInPeriod @relation("zaknosTozaknosprod", fields: [idZak, idObdobi, ncis], references: [offerID, periodID, carrierID])
+
+  @@id([idZak, idObdobi, ncis, idProdukce])
+  @@index([idProdukce], name: "zaknosprod_prod_idx")
+}
+
+model PeriodsOfOffer {
+  offerID          Int                @map("idZak")
+  periodID         Int                @map("idObdobi")
+  Poradi           Int?
+  PriceOfTransport Int?               @map("DCena")
+  obdobi           Period             @relation(fields: [periodID], references: [periodID])
+  offer            Offer              @relation("zakazkyTozakobdobi", fields: [offerID], references: [offerID])
+  mapperitem       mapperitem[]       @relation("mapperitemTozakobdobi")
+  vylepy           vylepy[]           @relation("vylepyTozakobdobi")
+  carriersInPeriod CarriersInPeriod[] @relation("zaknosTozakobdobi")
+  zakostatni       zakostatni?
+
+  @@id([offerID, periodID])
+  @@index([periodID], name: "zak_obdobi")
+  @@map("zakobdobi")
+}
+
+model zakostatni {
+  idZak      Int
+  idObdobi   Int
+  zoText     String?
+  zoCena     Int?
+  zoPocet    Int?
+  zoJednotka String?
+  zoDFakt    DateTime?
+  zakobdobi  PeriodsOfOffer @relation(fields: [idZak, idObdobi], references: [offerID, periodID])
+
+  @@id([idZak, idObdobi])
+}
+
+model zakpkorp {
+  idZak    Int
+  ncis     Int
+  idAgent  Int?
+  SAPobj   Int?
+  VlastTab String?
+  cTisk    Int?
+  cTabPrel Int?
+  cVylep   Int?
+  firmy    firmy?         @relation(fields: [idAgent], references: [idFirmy])
+  zakazkyp CarrierOfOffer @relation("zakazkypTozakpkorp", fields: [idZak, ncis], references: [offerID, carrierID])
+
+  @@id([idZak, ncis])
+  @@index([idAgent], name: "zakkorp_agent_idx")
+}
+
+model zakprefakt {
+  idZak        Int     @id
+  Specifikace  String?
+  SpecDet      String?
+  zpSplatnost  Int?
+  zpFrekvence  Int?
+  zpFixNakl    Int?
+  zpJednatel   Int?
+  zpKlJednatel Int?
+  zakazky      Offer   @relation(fields: [idZak], references: [offerID])
+}
+
+model zakprod {
+  idZak    Int
+  idProd   Int
+  prodejny prodejny @relation(fields: [idProd], references: [idProd])
+  zakazky  Offer    @relation("zakazkyTozakprod", fields: [idZak], references: [offerID])
+
+  @@id([idZak, idProd])
+  @@index([idProd], name: "prod_zak_idx")
+}
+
+model zakrez {
+  idZak    Int
+  idObdobi Int
+  ncis     Int
+  rPoradi  Int
+  rOpce    Int?
+  zaknos   CarriersInPeriod @relation(fields: [idZak, idObdobi, ncis], references: [offerID, periodID, carrierID])
+
+  @@id([idZak, idObdobi, ncis])
+}
+
+model zaksoubory {
+  fname   String
+  fext    String
+  idOsoby Int
+  fdate   DateTime?
+  fSize   Int?
+  osoby   Person    @relation(fields: [idOsoby], references: [personID])
+
+  @@id([fname, fext, idOsoby])
+  @@index([idOsoby], name: "zaksoubor_osoba_idx")
+}
+
+model rezervaceold {
+  idRez         Int             @id @default(autoincrement())
+  idKlient      Int?
+  idOsoby       Int?
+  RZkratka      String?
+  RPopis        String?
+  RStav         String?
+  RRok          Int?
+  RMesic        Int?
+  RDelka        Int?
+  DKonec        DateTime?
+  DPrac         DateTime?
+  idZak         Int?            @default(0)
+  Email2        String?         @default("")
+  rezervacepold rezervacepold[]
+}
+
+model rezervacepold {
+  idRez        Int
+  NCis         Int
+  Rok          Int
+  Mesic        Int
+  RPoradi      Int          @default(1)
+  RM           Int?
+  nosice       Carrier      @relation(fields: [NCis], references: [carrierID])
+  rezervaceold rezervaceold @relation(fields: [idRez], references: [idRez])
+
+  @@id([idRez, NCis, Rok, Mesic])
+  @@index([NCis], name: "rez_ncis_idx")
+}
+
+model undonosskup {
+  idUndo   Int
+  idObdobi Int
+  ncis     Int
+  idSkup   Int
+  idMotiv  Int
+  produkce Int?
+  nsPozn   String?
+
+  @@id([idObdobi, ncis, idSkup, idUndo])
+}
+
+model undozakobdobi {
+  idUndo   Int
+  idObdobi Int
+  Poradi   Int?
+  DCena    Int?
+
+  @@id([idUndo, idObdobi])
+  @@index([idObdobi], name: "zak_obdobi")
+}
+
+model SelectionPolygon {
+  selectionPolygonID Boolean
+  idZak              Int
+  title              String
+  path               Json
+  zakazky            Offer   @relation("SelectionPolygonTozakazky", fields: [idZak], references: [offerID])
+
+  @@id([selectionPolygonID, idZak])
+  @@index([idZak], name: "selectionPolygonToOffer")
+}
+
+model District {
+  districtID Int       @id
+  district   String    @unique
+  nosice     Carrier[] @relation("DistrictTonosice")
+}
+
+model Region {
+  regionID Int       @id
+  region   String    @unique
+  nosice   Carrier[] @relation("RegionTonosice")
+}
+
+// The underlying table does not contain a valid unique identifier and can therefore currently not be handled.
+// model kraje {
+  // idKr  Int?
+  // XKraj String
+  // Kraj  String
+  // kraj  kraj?  @relation(fields: [idKr], references: [idKraj])
+
+  // @@index([idKr], name: "index1")
+// }
+
+enum auditnos_aStav {
+  OK
+  Vada
+  Urgentn_ @map("Urgentní")
+}
+
+enum dokumenty_dokMena {
+  kc @map("Kč")
+  eur @map("€")
+  centi_eur @map("c€")
+}
+
+enum dokumenty_dokNeurcita {
+  neur_it_ @map("neurčitá")
+  AP
+  opce
+}
+
+enum firmy_fKat {
+  politics @map("Politika")
+  alcohol @map("Alkohol")
+  food @map("Potraviny")
+  furniture @map("Nábytek")
+  sex @map("Sex")
+  casino @map("Kasino")
+  other @map("ostatní")
+}
+
+enum korposoby_Funkce {
+  admin
+  GL
+  VL
+  GF
+  VKL
+  VP
+}
+
+enum loga_skupina {
+  potraviny
+  n_bytek @map("nábytek")
+  hobby
+}
+
+enum motiveType {
+  campain @map("Kam")
+  navigation @map("Nav")
+  SVO
+
+   @@map("motivy_mSkup")
+}
+
+enum masterPeriodType {
+  month @map("m")
+  ahold @map("A")
+
+   @@map("nadobdobi_noTyp")
+}
+
+enum svo_svoPoloha {
+  right @map("vpravo")
+  middle @map("střed")
+  left @map("vlevo")
+  left_4p @map("vlevo 4p")
+}
+
+enum svo_svoPozice {
+  right @map("pravá")
+  middle @map("střed")
+  left @map("levá")
+  rightBack @map("záda pravá")
+  middleBack @map("záda střed")
+  leftBack @map("záda levá")
+}
+
+enum svoobdobi_svoStav {
+  bal__ek @map("balíček")
+  pron_jem @map("pronájem")
+  rezervace
+  ciz_ @map("cizí")
+  voln_ @map("volná")
+}
+
+enum svoobdobi_svoTyp {
+  B_flex @map("B flex")
+  C_flex @map("C flex")
+}
+
+enum corporationType {
+  normal
+  prodejny
+  korporace
+
+   @@map("zakazky_zKorp")
+}
+
+enum currency {
+  kc @map("Kč")
+  eur @map("€")
+  centi_eur @map("c€")
+
+   @@map("zakazky_zMena")
+}
+
+enum parentChildReason {
+  copy @map("kopie")
+  continue @map("pokračování")
+  agentura
+  korp_agent @map("korp agent")
+
+   @@map("zakazky_zVazba")
+}
