@@ -17,8 +17,8 @@ export const ClientOffer = objectType({
 	definition(t) {
 		t.model.offerID();
 		t.model.title();
-		//t.model.carriersOfOffer();
-		//t.model.periodsOfOffer();
+		t.model.carriersOfOffer();
+		t.model.periodsOfOffer();
 	},
 });
 

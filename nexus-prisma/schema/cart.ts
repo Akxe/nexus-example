@@ -1,8 +1,5 @@
 import { arg, extendType, inputObjectType, intArg, objectType, stringArg } from '@nexus/schema';
 
-import { CartError, getMinimumCampaignDate } from '../../../../../libs/helpers/src';
-import { MailService } from '../../mail-adapter';
-
 export const Cart = objectType({
 	name: 'Cart',
 	definition(t) {
@@ -70,65 +67,21 @@ export const CartTypes = [
 					info: stringArg({ description: 'If any additional information is to be provided...' }),
 				},
 				async resolve(_root, args, context, _info) {
-					if (new Date(args.start.year, args.start.month) < getMinimumCampaignDate()) {
-						throw new TypeError(CartError.startTooEarly);
+					if (new Date(args.start.year, args.start.month) < new Date()) { // Mocked
+						throw new TypeError('CartError.startTooEarly');
 					}
 
 					if (new Date(args.start.year, args.start.month) >= new Date(args.end.year, args.end.month)) {
-						throw new TypeError(CartError.endNotAfterStart);
+						throw new TypeError('CartError.endNotAfterStart');
 					}
 
 					if (!args.adsMotive.length) {
-						throw new TypeError(CartError.noMotives);
+						throw new TypeError('CartError.noMotives');
 					}
 
 					if (!args.carriersID.length) {
-						throw new TypeError(CartError.noCarriers);
+						throw new TypeError('CartError.noCarriers');
 					}
-
-					return Promise.all([
-						MailService.getInstance(),
-						context.prisma.cart.create({
-							data: {
-								PeriodStart: {
-									connect: {
-										typ_obdobi: {
-											type: 'm',
-											text: `${args.start.month}/${args.start.year}`,
-										},
-									},
-								},
-								PeriodEnd: {
-									connect: {
-										typ_obdobi: {
-											type: 'm',
-											text: `${args.end.month}/${args.end.year}`,
-										},
-									},
-								},
-								name: `${args.givenName} ${args.familyName}`,
-								email: args.email,
-								adsMotive: args.adsMotive.join(', '),
-								goal: args.goal,
-								info: args.info,
-								CartItem: {
-									create: args.carriersID.map(carrierID => ({
-										nosice: {
-											connect: {
-												carrierID: carrierID || undefined
-											},
-										},
-									})),
-								},
-							},
-						}),
-					]).then(([mailService, data]) => {
-						return mailService.sendMail(
-							'asistentka',
-							mailService.domainFromRequest(context.req),
-							MailService.templateMakers.cart(args, data),
-						).then(() => data);
-					});
 				},
 			});
 		},

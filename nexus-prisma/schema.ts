@@ -1,30 +1,8 @@
 import { declarativeWrappingPlugin, makeSchema, queryType } from '@nexus/schema';
-import type { SchemaConfig } from '@nexus/schema/dist/core';
 import { nexusPrisma } from 'nexus-plugin-prisma';
 import { join } from 'path';
 
-import { environment } from '../environments/environment';
 import { Context } from './context';
-
-const schemaOptions: Omit<SchemaConfig, 'types'> = environment.production ? {} : {
-	outputs: {
-		schema: join(__dirname, '/../schema.graphql'),
-		typegen: join(__dirname, '/nexus.generated.ts'),
-	},
-	typegenAutoConfig: {
-		contextType: 'Context.Context',
-		sources: [
-			{
-				source: '.prisma/client/index.d.ts',
-				alias: 'prisma',
-			},
-			{
-				source: join(__dirname, './context.ts'),
-				alias: 'Context',
-			},
-		],
-	},
-};
 
 import { ClientOfferTypes } from './schema/carriers-of-offer';
 import { CarrierTypes } from './schema/carrier';
@@ -57,5 +35,21 @@ export const schema = makeSchema({
 		}),
 		declarativeWrappingPlugin(),
 	],
-	...schemaOptions,
+	outputs: {
+		schema: join(__dirname, '/../schema.graphql'),
+		typegen: join(__dirname, '/nexus.generated.ts'),
+	},
+	typegenAutoConfig: {
+		contextType: 'Context.Context',
+		sources: [
+			{
+				source: '.prisma/client/index.d.ts',
+				alias: 'prisma',
+			},
+			{
+				source: join(__dirname, './context.ts'),
+				alias: 'Context',
+			},
+		],
+	},
 });

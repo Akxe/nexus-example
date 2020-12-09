@@ -12,17 +12,4 @@ export const Period = objectType({
 
 export const PeriodTypes = [
 	Period,
-	/*extendType({
-		type: 'Query',
-		definition(t) {
-			t.crud.obdobi({
-				type: 'Period',
-				alias: 'period',
-			});
-			t.crud.obdobis({
-				type: 'Period',
-				alias: 'periods'
-			});
-		},
-	}),*/
 ];

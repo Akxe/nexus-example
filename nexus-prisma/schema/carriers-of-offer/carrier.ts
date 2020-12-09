@@ -1,5 +1,6 @@
 import { extendType, objectType } from '@nexus/schema';
 
+//	Extend but not modify!
 export const CarrierOfOffer = extendType({
 	type: 'Carrier',
 	definition(t) {
